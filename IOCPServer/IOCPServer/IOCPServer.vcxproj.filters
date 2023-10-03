@@ -13,5 +13,36 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="소스 파일\main">
+      <UniqueIdentifier>{727a83f2-43b3-4c10-8ea9-2cf8830a5593}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\IOCPServer">
+      <UniqueIdentifier>{926b3eb5-4408-4587-b003-c76a418828ce}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Include">
+      <UniqueIdentifier>{2ce708cc-78dc-4cbc-8912-e181d8b56954}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>소스 파일\main</Filter>
+    </ClCompile>
+    <ClCompile Include="IOCPServer.cpp">
+      <Filter>소스 파일\IOCPServer</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Desktop\Common\NetServerSerializeBuffer.cpp">
+      <Filter>소스 파일\Include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Desktop\Common\Parse.cpp">
+      <Filter>소스 파일\Include</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Desktop\Common\Ringbuffer.cpp">
+      <Filter>소스 파일\Include</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="IOCPServer.h">
+      <Filter>소스 파일\IOCPServer</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
