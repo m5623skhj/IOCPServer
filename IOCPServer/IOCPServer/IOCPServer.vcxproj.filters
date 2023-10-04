@@ -22,6 +22,12 @@
     <Filter Include="소스 파일\Include">
       <UniqueIdentifier>{2ce708cc-78dc-4cbc-8912-e181d8b56954}</UniqueIdentifier>
     </Filter>
+    <Filter Include="소스 파일\Packet">
+      <UniqueIdentifier>{3c45acf6-df25-4405-beab-d2e85cf588a6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="소스 파일\Define">
+      <UniqueIdentifier>{6c637c44-8d8f-4334-ae69-b3509bd1ebbc}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -39,10 +45,28 @@
     <ClCompile Include="..\..\..\..\..\Desktop\Common\Ringbuffer.cpp">
       <Filter>소스 파일\Include</Filter>
     </ClCompile>
+    <ClCompile Include="PacketManager.cpp">
+      <Filter>소스 파일\Packet</Filter>
+    </ClCompile>
+    <ClCompile Include="IOCPSession.cpp">
+      <Filter>소스 파일\IOCPServer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IOCPServer.h">
       <Filter>소스 파일\IOCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="PacketManager.h">
+      <Filter>소스 파일\Packet</Filter>
+    </ClInclude>
+    <ClInclude Include="IOCPSession.h">
+      <Filter>소스 파일\IOCPServer</Filter>
+    </ClInclude>
+    <ClInclude Include="DefineType.h">
+      <Filter>소스 파일\Define</Filter>
+    </ClInclude>
+    <ClInclude Include="Protocol.h">
+      <Filter>소스 파일\Define</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
