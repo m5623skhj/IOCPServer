@@ -26,6 +26,7 @@ public:
 
 	void Init();
 
+#pragma region PacketRegister
 public:
 	template <typename PacketType>
 	void RegisterPacket()
@@ -56,4 +57,10 @@ public:
 
 	std::map<PacketId, PacketFactoryFunction> packetFactoryFunctionMap;
 	std::map<PacketId, PacketHandler> packetHandlerMap;
+#pragma endregion PacketRegister
+
+#pragma region PakcetHandler
+public:
+	// Declare Packet Handler()
+#pragma endregion PakcetHandler
 };

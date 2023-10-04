@@ -19,6 +19,7 @@
 struct st_Error;
 
 class CNetServerSerializationBuf;
+class IOCPSession;
 
 class IOCPServer
 {
