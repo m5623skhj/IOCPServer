@@ -51,6 +51,9 @@
     <ClCompile Include="IOCPSession.cpp">
       <Filter>소스 파일\IOCPServer</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\..\..\..\Desktop\Common\PreCompile.cpp">
+      <Filter>소스 파일\Include</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IOCPServer.h">
@@ -66,6 +69,9 @@
       <Filter>소스 파일\Define</Filter>
     </ClInclude>
     <ClInclude Include="Protocol.h">
+      <Filter>소스 파일\Define</Filter>
+    </ClInclude>
+    <ClInclude Include="Enum.h">
       <Filter>소스 파일\Define</Filter>
     </ClInclude>
   </ItemGroup>
