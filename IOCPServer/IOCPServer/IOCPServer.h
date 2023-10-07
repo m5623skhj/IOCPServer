@@ -44,7 +44,7 @@ public:
 	void StopServer();
 
 private:
-	SOCKET listenSocket;
+	SOCKET listenSocket = INVALID_SOCKET;
 
 #pragma region thread
 public:
@@ -63,7 +63,21 @@ private:
 private:
 	std::thread accepterThread;
 	std::vector<std::thread> workerThreads;
+
+	bool* workerOnList;
 #pragma endregion thread
+
+#pragma region session
+private:
+	bool MakeNewSession(SOCKET enteredClientSocket);
+	bool ReleaseSession(OUT IOCPSession& releaseSession);
+
+	void IOCountDecrement(OUT IOCPSession& session);
+
+private:
+	UINT sessionCount = 0;
+
+#pragma endregion session
 
 #pragma region serverOption
 private:

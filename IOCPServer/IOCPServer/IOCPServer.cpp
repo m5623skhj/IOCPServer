@@ -1,6 +1,7 @@
 #include "PreCompile.h"
 #include "IOCPServer.h"
 #include "ServerCommon.h"
+#include "IOCPSession.h"
 
 using namespace std;
 
@@ -21,30 +22,147 @@ IOCPServer::IOCPServer()
 
 bool IOCPServer::StartServer(const std::wstring& optionFileName)
 {
+	if (ServerOptionParsing(optionFileName) == false)
+	{
+		PrintError("ServerOptionParsing");
+		return false;
+	}
 
+	WSADATA wsaData;
+	if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+	{
+		PrintError("WSAStartup");
+		return false;
+	}
+
+	listenSocket = WSASocket(AF_INET, SOCK_STREAM, IPPROTO_TCP, NULL, 0, WSA_FLAG_REGISTERED_IO);
+	if (listenSocket == INVALID_SOCKET)
+	{
+		PrintError("socket");
+		return false;
+	}
+
+	SOCKADDR_IN addr;
+	ZeroMemory(&addr, sizeof(addr));
+	addr.sin_family = AF_INET;
+	addr.sin_addr.S_un.S_addr = htonl(INADDR_ANY);
+	addr.sin_port = htons(port);
+	if (::bind(listenSocket, (SOCKADDR*)&addr, sizeof(addr)) == SOCKET_ERROR)
+	{
+		PrintError("bind");
+		return false;
+	}
+
+	if (listen(listenSocket, SOMAXCONN) == SOCKET_ERROR)
+	{
+		PrintError("listen");
+		return false;
+	}
+
+	if (SetSocketOption() == false)
+	{
+		return false;
+	}
+
+	RunThreads();
 
 	return true;
 }
 
 void IOCPServer::StopServer()
 {
+	closesocket(listenSocket);
 
+	delete[] workerOnList;
 }
 
 #pragma region thread
 void IOCPServer::Accepter()
 {
+	SOCKET enteredClientSocket;
+	SOCKADDR_IN enteredClientAddr;
+	int addrSize = sizeof(enteredClientAddr);
+	DWORD error = 0;
+	WCHAR enteredIP[IP_SIZE];
+	UNREFERENCED_PARAMETER(enteredIP);
 
+	while (true)
+	{
+		enteredClientSocket = accept(listenSocket, reinterpret_cast<SOCKADDR*>(&enteredClientAddr), &addrSize);
+		if (enteredClientSocket == INVALID_SOCKET)
+		{
+			error = GetLastError();
+			if (error == WSAEINTR)
+			{
+				break;
+			}
+			else
+			{
+				PrintError("Accepter() / accept", error);
+				continue;
+			}
+		}
+
+		if (MakeNewSession(enteredClientSocket) == false)
+		{
+			closesocket(enteredClientSocket);
+			continue;
+		}
+
+		InterlockedIncrement(&sessionCount);
+	}
 }
 
 void IOCPServer::Worker(BYTE inThreadId)
 {
+	char postResult;
+	int retval;
+	DWORD transferred;
+	IOCPSession* session;
+	LPOVERLAPPED overlapped;
 
+	while (1)
+	{
+		postResult = -1;
+		transferred = 0;
+		session = nullptr;
+		overlapped = nullptr;
+
+
+	}
 }
 
 void IOCPServer::RunThreads()
 {
+	workerOnList = new bool[numOfWorkerThread];
 
+	for (BYTE i = 0; i < numOfWorkerThread; ++i)
+	{
+		workerOnList[i] = false;
+		workerThreads.emplace_back([this, i]() { this->Worker(i); });
+	}
+
+	do
+	{
+		bool completed = true;
+		for (int i = 0; i < numOfWorkerThread; ++i)
+		{
+			if (workerOnList[i] == false)
+			{
+				completed = false;
+				break;
+			}
+		}
+
+		if (completed == true)
+		{
+			break;
+		}
+
+		Sleep(1000);
+	} while (true);
+
+	accepterThread = std::thread([this]() { this->Accepter(); });
 }
 
 IO_POST_ERROR IOCPServer::RecvCompleted(IOCPSession& session, DWORD transferred)
@@ -68,6 +186,26 @@ WORD IOCPServer::GetPayloadLength(OUT NetBuffer& buffer, int restSize)
 	return payloadLength;
 }
 #pragma endregion thread
+
+#pragma region session
+bool IOCPServer::MakeNewSession(SOCKET enteredClientSocket)
+{
+	return true;
+}
+
+bool IOCPServer::ReleaseSession(OUT IOCPSession& releaseSession)
+{
+	return true;
+}
+
+void IOCPServer::IOCountDecrement(OUT IOCPSession& session)
+{
+	if (InterlockedDecrement(&session.ioCount) == 0)
+	{
+		ReleaseSession(session);
+	}
+}
+#pragma endregion session
 
 #pragma region serverOption
 bool IOCPServer::ServerOptionParsing(const std::wstring& optionFileName)

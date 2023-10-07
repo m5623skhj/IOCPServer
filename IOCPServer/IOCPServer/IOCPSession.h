@@ -3,8 +3,12 @@
 #include "DefineType.h"
 #include <atomic>
 
+class IOCPServer;
+
 class IOCPSession
 {
+	friend IOCPServer;
+
 public:
 	IOCPSession() = delete;
 	IOCPSession(SOCKET inSocket, SessionId inSessionId);
@@ -22,4 +26,9 @@ private:
 
 	bool isSendAndDisconnect = false;
 	std::atomic_bool isReleasedSession = false;
+
+#pragma region IO
+private:
+	LONG ioCount = 0;
+#pragma endregion IO
 };
