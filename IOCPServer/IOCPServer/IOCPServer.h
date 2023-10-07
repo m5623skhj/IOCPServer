@@ -6,6 +6,8 @@
 #include "Enum.h"
 #include "DefineType.h"
 #include "NetServerSerializeBuffer.h"
+#include <map>
+#include <mutex>
 
 #pragma comment(lib, "ws2_32.lib")
 
@@ -70,14 +72,25 @@ private:
 #pragma region session
 private:
 	bool MakeNewSession(SOCKET enteredClientSocket);
+	std::shared_ptr<IOCPSession> GetNewSession(SOCKET enteredClientSocket);
 	bool ReleaseSession(OUT IOCPSession& releaseSession);
 
 	void IOCountDecrement(OUT IOCPSession& session);
 
 private:
+	std::map<UINT64, std::shared_ptr<IOCPSession>> sessionMap;
+	std::mutex sessionMapLock;
+
 	UINT sessionCount = 0;
+	SessionId nextSessionId = INVALID_SESSION_ID + 1;
 
 #pragma endregion session
+
+#pragma region io
+private:
+	IO_POST_ERROR RecvPost(OUT IOCPSession& session);
+	IO_POST_ERROR SendPost(OUT IOCPSession& session);
+#pragma endregion io
 
 #pragma region serverOption
 private:

@@ -190,7 +190,45 @@ WORD IOCPServer::GetPayloadLength(OUT NetBuffer& buffer, int restSize)
 #pragma region session
 bool IOCPServer::MakeNewSession(SOCKET enteredClientSocket)
 {
-	return true;
+	auto newSession = GetNewSession(enteredClientSocket);
+	if (newSession == nullptr)
+	{
+		return false;
+	}
+	InterlockedIncrement(&newSession->ioCount);
+
+	do
+	{
+		{
+			std::lock_guard<std::mutex> lock(sessionMapLock);
+			if (sessionMap.emplace(newSession->sessionId, newSession).second == false)
+			{
+				IOCountDecrement(*newSession);
+
+				PrintError("RIOTestServer::MakeNewSession.emplace", GetLastError());
+				break;
+			}
+		}
+
+		RecvPost(*newSession);
+		IOCountDecrement(*newSession);
+
+		return true;
+	} while (false);
+
+	ReleaseSession(*newSession);
+	return false;
+}
+
+std::shared_ptr<IOCPSession> IOCPServer::GetNewSession(SOCKET enteredClientSocket)
+{
+	SessionId newSessionId = InterlockedIncrement(&nextSessionId);
+	if (newSessionId == INVALID_SESSION_ID)
+	{
+		return nullptr;
+	}
+
+	return make_shared<IOCPSession>(enteredClientSocket, newSessionId);
 }
 
 bool IOCPServer::ReleaseSession(OUT IOCPSession& releaseSession)
@@ -206,6 +244,18 @@ void IOCPServer::IOCountDecrement(OUT IOCPSession& session)
 	}
 }
 #pragma endregion session
+
+#pragma region io
+IO_POST_ERROR IOCPServer::RecvPost(OUT IOCPSession& session)
+{
+	return IO_POST_ERROR::SUCCESS;
+}
+
+IO_POST_ERROR IOCPServer::SendPost(OUT IOCPSession& session)
+{
+	return IO_POST_ERROR::SUCCESS;
+}
+#pragma endregion io
 
 #pragma region serverOption
 bool IOCPServer::ServerOptionParsing(const std::wstring& optionFileName)
