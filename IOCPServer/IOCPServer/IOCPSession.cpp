@@ -17,6 +17,18 @@ IOCPSession::~IOCPSession()
 
 }
 
+void IOCPSession::Initialize()
+{
+	recvIOData.bufferCount = 0;
+	recvIOData.ioMode = 0;
+	recvIOData.ringBuffer.InitPointer();
+	ZeroMemory(&recvIOData.overlapped, sizeof(OVERLAPPED));
+
+	sendIOData.bufferCount = 0;
+	sendIOData.ioMode = 0;
+	ZeroMemory(&sendIOData.overlapped, sizeof(OVERLAPPED));
+}
+
 void IOCPSession::OnReceived()
 {
 

@@ -47,11 +47,13 @@ public:
 
 private:
 	SOCKET listenSocket = INVALID_SOCKET;
+	HANDLE iocpHandle;
 
 #pragma region thread
 public:
 	void Accepter();
 	void Worker(BYTE inThreadId);
+	void GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred);
 
 private:
 	void RunThreads();

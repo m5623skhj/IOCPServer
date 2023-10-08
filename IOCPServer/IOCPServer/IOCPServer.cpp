@@ -64,6 +64,13 @@ bool IOCPServer::StartServer(const std::wstring& optionFileName)
 		return false;
 	}
 
+	iocpHandle = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, 0, numOfWorkerThread);
+	if (iocpHandle == NULL)
+	{
+		PrintError("IOCP handle was null");
+		return false;
+	}
+
 	RunThreads();
 
 	return true;
@@ -118,17 +125,62 @@ void IOCPServer::Worker(BYTE inThreadId)
 	char postResult;
 	int retval;
 	DWORD transferred;
-	IOCPSession* session;
+	SessionId completionKey;
 	LPOVERLAPPED overlapped;
 
 	while (1)
 	{
 		postResult = -1;
 		transferred = 0;
-		session = nullptr;
+		completionKey = INVALID_SESSION_ID;
 		overlapped = nullptr;
 
+		if (GetQueuedCompletionStatus(iocpHandle, &transferred, static_cast<PULONG_PTR>(&completionKey), &overlapped, INFINITE) == false)
+		{
+			GetQueuedCompletionStatusFailed(overlapped, completionKey, transferred);
+			continue;
+		}
 
+
+	}
+}
+
+void IOCPServer::GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred)
+{
+	if (overlapped == NULL)
+	{
+		PrintError("Overlapped is NULL");
+		g_Dump.Crash();
+	}
+
+	IOCPSession* session = nullptr;
+	{
+		std::lock_guard<mutex> lock(sessionMapLock);
+		auto iter = sessionMap.find(sessionId);
+		if (iter == sessionMap.end())
+		{
+			return;
+		}
+
+		session = iter->second.get();
+		if (session == nullptr)
+		{
+			return;
+		}
+	}
+
+	if (transferred == 0 || session->ioCancel)
+	{
+		if (InterlockedDecrement(&session->ioCount) == 0)
+		{
+			ReleaseSession(*session);
+		}
+	}
+
+	int error = GetLastError();
+	if (error != ERROR_NETNAME_DELETED && error != ERROR_OPERATION_ABORTED)
+	{
+		PrintError("GetQueuedCompletionStatus() failed", error);
 	}
 }
 
@@ -209,9 +261,12 @@ bool IOCPServer::MakeNewSession(SOCKET enteredClientSocket)
 				break;
 			}
 		}
+		newSession->Initialize();
 
 		RecvPost(*newSession);
 		IOCountDecrement(*newSession);
+
+		newSession->OnClientEntered();
 
 		return true;
 	} while (false);

@@ -2,8 +2,26 @@
 #include "Ringbuffer.h"
 #include "DefineType.h"
 #include <atomic>
+#include "NetServerSerializeBuffer.h"
+#include "LockFreeQueue.h"
 
 class IOCPServer;
+
+struct RecvOverlappedData
+{
+	WORD bufferCount;
+	UINT ioMode;
+	OVERLAPPED overlapped;
+	CRingbuffer ringBuffer;
+};
+
+struct SendOverlappedData
+{
+	LONG bufferCount;
+	UINT ioMode;
+	OVERLAPPED overlapped;
+	CLockFreeQueue<NetBuffer*> sendQ;
+};
 
 class IOCPSession
 {
@@ -13,6 +31,8 @@ public:
 	IOCPSession() = delete;
 	IOCPSession(SOCKET inSocket, SessionId inSessionId);
 	virtual ~IOCPSession();
+
+	void Initialize();
 
 public:
 	void OnReceived();
@@ -30,5 +50,10 @@ private:
 #pragma region IO
 private:
 	LONG ioCount = 0;
+	bool ioCancel = false;
+
+	RecvOverlappedData recvIOData;
+	SendOverlappedData sendIOData;
+	OVERLAPPED postQueueOverlapped;
 #pragma endregion IO
 };
