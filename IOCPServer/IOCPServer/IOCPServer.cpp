@@ -155,7 +155,7 @@ void IOCPServer::GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, Sessio
 
 	IOCPSession* session = nullptr;
 	{
-		std::lock_guard<mutex> lock(sessionMapLock);
+		lock_guard<mutex> lock(sessionMapLock);
 		auto iter = sessionMap.find(sessionId);
 		if (iter == sessionMap.end())
 		{
@@ -252,7 +252,7 @@ bool IOCPServer::MakeNewSession(SOCKET enteredClientSocket)
 	do
 	{
 		{
-			std::lock_guard<std::mutex> lock(sessionMapLock);
+			lock_guard<std::mutex> lock(sessionMapLock);
 			if (sessionMap.emplace(newSession->sessionId, newSession).second == false)
 			{
 				IOCountDecrement(*newSession);
@@ -288,6 +288,12 @@ std::shared_ptr<IOCPSession> IOCPServer::GetNewSession(SOCKET enteredClientSocke
 
 bool IOCPServer::ReleaseSession(OUT IOCPSession& releaseSession)
 {
+	closesocket(releaseSession.socket);
+	InterlockedDecrement(&sessionCount);
+
+	lock_guard<mutex> lock(sessionMapLock);
+	sessionMap.erase(releaseSession.sessionId);
+
 	return true;
 }
 
