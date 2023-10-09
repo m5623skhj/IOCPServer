@@ -276,9 +276,12 @@ IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
 	return retval;
 }
 
-IO_POST_ERROR IOCPServer::IOSendPostPart()
+IO_POST_ERROR IOCPServer::IOSendPostPart(IOCPSession& session)
 {
-	return IO_POST_ERROR::SUCCESS;
+	IO_POST_ERROR retval = SendPost(session);
+	InterlockedExchange(&session.nowPostQueueing, NONSENDING);
+
+	return retval;
 }
 
 void IOCPServer::RunThreads()

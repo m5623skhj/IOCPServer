@@ -52,7 +52,7 @@ private:
 
 	IO_POST_ERROR IORecvPart();
 	IO_POST_ERROR IOSendPart(IOCPSession& session);
-	IO_POST_ERROR IOSendPostPart();
+	IO_POST_ERROR IOSendPostPart(IOCPSession& session);
 
 private:
 	void RunThreads();
