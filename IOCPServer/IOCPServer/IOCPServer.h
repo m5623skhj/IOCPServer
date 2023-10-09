@@ -11,19 +11,6 @@
 
 #pragma comment(lib, "ws2_32.lib")
 
-#define NONSENDING	0
-#define SENDING		1
-
-#define SESSION_INDEX_SHIFT 48
-
-#define POST_RETVAL_ERR_SESSION_DELETED		0
-#define POST_RETVAL_ERR						1
-#define POST_RETVAL_COMPLETE				2
-
-#define ONE_SEND_WSABUF_MAX					200
-
-#define df_RELEASE_VALUE					0x100000000
-
 struct st_Error;
 
 class IOCPSession;
@@ -62,6 +49,10 @@ private:
 	bool IsClosedSession(DWORD transferred, IOCPSession& session);
 
 	void IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& session, DWORD transferred);
+
+	IO_POST_ERROR IORecvPart();
+	IO_POST_ERROR IOSendPart(IOCPSession& session);
+	IO_POST_ERROR IOSendPostPart();
 
 private:
 	void RunThreads();

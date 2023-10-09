@@ -55,5 +55,8 @@ private:
 	RecvOverlappedData recvIOData;
 	SendOverlappedData sendIOData;
 	OVERLAPPED postQueueOverlapped;
+
+	UINT nowPostQueueing = NONSENDING;
+	NetBuffer* storedBuffer[ONE_SEND_WSABUF_MAX];
 #pragma endregion IO
 };

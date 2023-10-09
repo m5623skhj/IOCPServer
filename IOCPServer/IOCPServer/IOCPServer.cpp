@@ -196,27 +196,6 @@ void IOCPServer::GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, Sessio
 	}
 }
 
-void IOCPServer::CheckValidIO()
-{
-	if (overlapped == NULL)
-	{
-		PrintError("GetQueuedCompletionStatusFailed() overlapped is NULL");
-		g_Dump.Crash();
-	}
-
-	auto session = GetSession(sessionId);
-	if (session == nullptr)
-	{
-		return;
-	}
-
-	if (transferred == 0 || session->ioCancel)
-	{
-		IOCountDecrement(*session);
-	}
-
-}
-
 std::shared_ptr<IOCPSession> IOCPServer::GetSession(SessionId sessionId)
 {
 	lock_guard<mutex> lock(sessionMapLock);
@@ -242,18 +221,18 @@ bool IOCPServer::IsClosedSession(DWORD transferred, IOCPSession& session)
 
 void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& session, DWORD transferred)
 {
-	IO_POST_ERROR retval;
+	IO_POST_ERROR retval = IO_POST_ERROR::INVALID_OPERATION_TYPE;
 	if (overlapped == &session.recvIOData.overlapped)
 	{
-
+		retval = IORecvPart();
 	}
 	else if (overlapped == &session.sendIOData.overlapped)
 	{
-
+		retval = IOSendPart(session);
 	}
 	else if (overlapped == &session.postQueueOverlapped)
 	{
-
+		retval = IOSendPostPart();
 	}
 
 	if (retval == IO_POST_ERROR::IS_DELETED_SESSION)
@@ -262,6 +241,44 @@ void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& sessio
 	}
 
 	IOCountDecrement(session);
+}
+
+IO_POST_ERROR IOCPServer::IORecvPart()
+{
+	return IO_POST_ERROR::SUCCESS;
+}
+
+IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
+{
+	IO_POST_ERROR retval;
+
+	int bufferCount = session.sendIOData.bufferCount;
+	for (int i = 0; i < bufferCount; ++i)
+	{
+		NetBuffer::Free(session.storedBuffer[i]);
+	}
+
+	session.sendIOData.bufferCount = 0;
+
+	session.OnSend();
+	if (session.isSendAndDisconnect == false)
+	{
+		InterlockedExchange(&session.sendIOData.ioMode, NONSENDING);
+		retval = SendPost(session);
+		InterlockedExchange(&session.nowPostQueueing, NONSENDING);
+	}
+	else
+	{
+		shutdown(session.socket, SD_BOTH);
+		retval = IO_POST_ERROR::SUCCESS;
+	}
+
+	return retval;
+}
+
+IO_POST_ERROR IOCPServer::IOSendPostPart()
+{
+	return IO_POST_ERROR::SUCCESS;
 }
 
 void IOCPServer::RunThreads()
