@@ -141,47 +141,127 @@ void IOCPServer::Worker(BYTE inThreadId)
 			continue;
 		}
 
-
+		GetQueuedCompletionStatusSuccess(overlapped, completionKey, transferred);
 	}
+
+	NetBuffer::ChunkFreeForcibly();
+}
+
+void IOCPServer::GetQueuedCompletionStatusSuccess(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred)
+{
+	if (overlapped == NULL)
+	{
+		PrintError("GetQueuedCompletionStatusSuccess() overlapped is NULL");
+		g_Dump.Crash();
+	}
+
+	auto session = GetSession(sessionId);
+	if (session == nullptr)
+	{
+		return;
+	}
+
+	if (transferred == 0 || session->ioCancel)
+	{
+		IOCountDecrement(*session);
+		return;
+	}
+
+	IOCompletedProcess(overlapped, *session, transferred);
 }
 
 void IOCPServer::GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred)
 {
 	if (overlapped == NULL)
 	{
-		PrintError("Overlapped is NULL");
+		PrintError("GetQueuedCompletionStatusFailed() overlapped is NULL");
 		g_Dump.Crash();
 	}
 
-	IOCPSession* session = nullptr;
+	auto session = GetSession(sessionId);
+	if (session == nullptr)
 	{
-		lock_guard<mutex> lock(sessionMapLock);
-		auto iter = sessionMap.find(sessionId);
-		if (iter == sessionMap.end())
-		{
-			return;
-		}
-
-		session = iter->second.get();
-		if (session == nullptr)
-		{
-			return;
-		}
+		return;
 	}
 
 	if (transferred == 0 || session->ioCancel)
 	{
-		if (InterlockedDecrement(&session->ioCount) == 0)
-		{
-			ReleaseSession(*session);
-		}
+		IOCountDecrement(*session);
 	}
 
 	int error = GetLastError();
 	if (error != ERROR_NETNAME_DELETED && error != ERROR_OPERATION_ABORTED)
 	{
-		PrintError("GetQueuedCompletionStatus() failed", error);
+		PrintError("GetQueuedCompletionStatusSuccess() error :", error);
 	}
+}
+
+void IOCPServer::CheckValidIO()
+{
+	if (overlapped == NULL)
+	{
+		PrintError("GetQueuedCompletionStatusFailed() overlapped is NULL");
+		g_Dump.Crash();
+	}
+
+	auto session = GetSession(sessionId);
+	if (session == nullptr)
+	{
+		return;
+	}
+
+	if (transferred == 0 || session->ioCancel)
+	{
+		IOCountDecrement(*session);
+	}
+
+}
+
+std::shared_ptr<IOCPSession> IOCPServer::GetSession(SessionId sessionId)
+{
+	lock_guard<mutex> lock(sessionMapLock);
+	auto iter = sessionMap.find(sessionId);
+	if (iter == sessionMap.end())
+	{
+		return nullptr;
+	}
+
+	return iter->second;
+}
+
+bool IOCPServer::IsClosedSession(DWORD transferred, IOCPSession& session)
+{
+	if (transferred == 0 || session.ioCancel == true)
+	{
+		IOCountDecrement(session);
+		return false;
+	}
+
+	return true;
+}
+
+void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& session, DWORD transferred)
+{
+	IO_POST_ERROR retval;
+	if (overlapped == &session.recvIOData.overlapped)
+	{
+
+	}
+	else if (overlapped == &session.sendIOData.overlapped)
+	{
+
+	}
+	else if (overlapped == &session.postQueueOverlapped)
+	{
+
+	}
+
+	if (retval == IO_POST_ERROR::IS_DELETED_SESSION)
+	{
+		return;
+	}
+
+	IOCountDecrement(session);
 }
 
 void IOCPServer::RunThreads()

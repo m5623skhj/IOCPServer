@@ -53,7 +53,15 @@ private:
 public:
 	void Accepter();
 	void Worker(BYTE inThreadId);
+
+private:
+	void GetQueuedCompletionStatusSuccess(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred);
 	void GetQueuedCompletionStatusFailed(LPOVERLAPPED overlapped, SessionId sessionId, DWORD transferred);
+
+	std::shared_ptr<IOCPSession> GetSession(SessionId sessionId);
+	bool IsClosedSession(DWORD transferred, IOCPSession& session);
+
+	void IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& session, DWORD transferred);
 
 private:
 	void RunThreads();
