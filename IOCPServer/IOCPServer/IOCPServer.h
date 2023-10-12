@@ -50,9 +50,11 @@ private:
 
 	void IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& session, DWORD transferred);
 
-	IO_POST_ERROR IORecvPart();
+	IO_POST_ERROR IORecvPart(IOCPSession& session, DWORD transferred);
 	IO_POST_ERROR IOSendPart(IOCPSession& session);
 	IO_POST_ERROR IOSendPostPart(IOCPSession& session);
+
+	bool PacketDecode(OUT NetBuffer& buffer);
 
 private:
 	void RunThreads();
@@ -77,6 +79,10 @@ private:
 	bool ReleaseSession(OUT IOCPSession& releaseSession);
 
 	void IOCountDecrement(OUT IOCPSession& session);
+
+private:
+	void HandlePacketError(NetBuffer& willDeallocateBuffer, const std::string& printErrorString);
+	void Disconnect(UINT64 sessionId);
 
 private:
 	std::map<UINT64, std::shared_ptr<IOCPSession>> sessionMap;

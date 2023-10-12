@@ -35,7 +35,7 @@ public:
 	void Initialize();
 
 public:
-	void OnReceived();
+	void OnReceived(NetBuffer& recvBuffer);
 	void OnSend();
 	virtual void OnClientEntered() {}
 	virtual void OnClientLeaved() {}

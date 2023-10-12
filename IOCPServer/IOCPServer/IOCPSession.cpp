@@ -29,7 +29,7 @@ void IOCPSession::Initialize()
 	ZeroMemory(&sendIOData.overlapped, sizeof(OVERLAPPED));
 }
 
-void IOCPSession::OnReceived()
+void IOCPSession::OnReceived(NetBuffer& recvBuffer)
 {
 
 }

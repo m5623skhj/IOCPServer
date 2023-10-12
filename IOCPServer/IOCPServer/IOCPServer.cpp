@@ -224,7 +224,7 @@ void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& sessio
 	IO_POST_ERROR retval = IO_POST_ERROR::INVALID_OPERATION_TYPE;
 	if (overlapped == &session.recvIOData.overlapped)
 	{
-		retval = IORecvPart();
+		retval = IORecvPart(session, transferred);
 	}
 	else if (overlapped == &session.sendIOData.overlapped)
 	{
@@ -232,7 +232,7 @@ void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& sessio
 	}
 	else if (overlapped == &session.postQueueOverlapped)
 	{
-		retval = IOSendPostPart();
+		retval = IOSendPostPart(session);
 	}
 
 	if (retval == IO_POST_ERROR::IS_DELETED_SESSION)
@@ -243,9 +243,52 @@ void IOCPServer::IOCompletedProcess(LPOVERLAPPED overlapped, IOCPSession& sessio
 	IOCountDecrement(session);
 }
 
-IO_POST_ERROR IOCPServer::IORecvPart()
+IO_POST_ERROR IOCPServer::IORecvPart(IOCPSession& session, DWORD transferred)
 {
-	return IO_POST_ERROR::SUCCESS;
+	session.recvIOData.ringBuffer.MoveWritePos(transferred);
+	int restSize = session.recvIOData.ringBuffer.GetUseSize();
+	bool isPacketError = false;
+
+	while (restSize > df_HEADER_SIZE)
+	{
+		NetBuffer& buffer = *NetBuffer::Alloc();
+		session.recvIOData.ringBuffer.Peek((char*)buffer.m_pSerializeBuffer, df_HEADER_SIZE);
+		buffer.m_iRead = 0;
+
+		WORD payloadLength;
+		buffer >> payloadLength;
+		if (restSize < payloadLength + df_HEADER_SIZE)
+		{
+			if (payloadLength > dfDEFAULTSIZE)
+			{
+				HandlePacketError(buffer, "Invalid payload length " + payloadLength);
+				isPacketError = true;
+				break;
+			}
+		}
+
+		session.recvIOData.ringBuffer.RemoveData(df_HEADER_SIZE);
+		int dequeuedSize = session.recvIOData.ringBuffer.Dequeue(&buffer.m_pSerializeBuffer[buffer.m_iWrite], payloadLength);
+		buffer.m_iWrite += dequeuedSize;
+		if (PacketDecode(buffer) == false)
+		{
+			HandlePacketError(buffer, "Decode was failed");
+			isPacketError = true;
+			break;
+		}
+
+		restSize -= dequeuedSize + df_HEADER_SIZE;
+		session.OnReceived(buffer);
+		NetBuffer::Free(&buffer);
+	}
+
+	IO_POST_ERROR retval = RecvPost(session);
+	if (isPacketError == true)
+	{
+		Disconnect(session.sessionId);
+	}
+
+	return retval;
 }
 
 IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
@@ -282,6 +325,16 @@ IO_POST_ERROR IOCPServer::IOSendPostPart(IOCPSession& session)
 	InterlockedExchange(&session.nowPostQueueing, NONSENDING);
 
 	return retval;
+}
+
+bool IOCPServer::PacketDecode(OUT NetBuffer& buffer)
+{
+	if (buffer.Decode() == false)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 void IOCPServer::RunThreads()
@@ -403,6 +456,24 @@ void IOCPServer::IOCountDecrement(OUT IOCPSession& session)
 	{
 		ReleaseSession(session);
 	}
+}
+
+void IOCPServer::HandlePacketError(NetBuffer& willDeallocateBuffer, const std::string& printErrorString)
+{
+	PrintError(printErrorString);
+	NetBuffer::Free(&willDeallocateBuffer);
+}
+
+void IOCPServer::Disconnect(SessionId sessionId)
+{
+	lock_guard<mutex> lock(sessionMapLock);
+	auto session = sessionMap.find(sessionId);
+	if (session == sessionMap.end())
+	{
+		return;
+	}
+
+	shutdown(session->second->socket, SD_BOTH);
 }
 #pragma endregion session
 
