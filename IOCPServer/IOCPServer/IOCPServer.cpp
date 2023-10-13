@@ -303,7 +303,6 @@ IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
 
 	session.sendIOData.bufferCount = 0;
 
-	session.OnSend();
 	if (session.isSendAndDisconnect == false)
 	{
 		InterlockedExchange(&session.sendIOData.ioMode, NONSENDING);

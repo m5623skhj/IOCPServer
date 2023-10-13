@@ -1,6 +1,7 @@
 #include "PreCompile.h"
 #include "IOCPSession.h"
 #include <iostream>
+#include "PacketManager.h"
 
 IOCPSession::IOCPSession(SOCKET inSocket, SessionId inSessionId)
 	: socket(inSocket)
@@ -29,12 +30,35 @@ void IOCPSession::Initialize()
 	ZeroMemory(&sendIOData.overlapped, sizeof(OVERLAPPED));
 }
 
-void IOCPSession::OnReceived(NetBuffer& recvBuffer)
+void IOCPSession::OnReceived(NetBuffer& recvPacket)
 {
+	PacketId packetId;
+	recvPacket >> packetId;
 
+	auto packetHandler = PacketManager::GetInst().GetPacketHandler(packetId);
+	if (packetHandler == nullptr)
+	{
+		return;
+	}
+
+	auto packet = PacketManager::GetInst().MakePacket(packetId);
+	if (packet == nullptr)
+	{
+		return;
+	}
+
+	if (packet->GetPacketSize() < recvPacket.GetUseSize())
+	{
+		return;
+	}
+
+	char* targetPtr = reinterpret_cast<char*>(packet.get()) + sizeof(char*);
+	memcpy(targetPtr, recvPacket.GetReadBufferPtr(), recvPacket.GetUseSize());
+	std::any anyPacket = std::any(packet.get());
+	packetHandler(*this, anyPacket);
 }
 
-void IOCPSession::OnSend()
+void IOCPSession::OnSessionReleased()
 {
 
 }
