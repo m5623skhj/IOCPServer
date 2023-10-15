@@ -4,8 +4,8 @@
 
 bool PacketManager::HandlePacket(IOCPSession& session, Ping& packet)
 {
-	UNREFERENCED_PARAMETER(session);
-	UNREFERENCED_PARAMETER(packet);
+	Pong pong;
+	session.SendPacket(pong);
 
 	return true;
 }

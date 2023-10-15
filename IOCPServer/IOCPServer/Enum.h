@@ -8,3 +8,10 @@ enum class IO_POST_ERROR : char
 	, FAILED_SEND_POST
 	, INVALID_OPERATION_TYPE
 };
+
+enum class PACKET_ID : unsigned int
+{
+	INVALID_PACKET = 0
+	, PING
+	, PONG
+};

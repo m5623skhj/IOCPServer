@@ -6,6 +6,7 @@
 #include "LockFreeQueue.h"
 
 class IOCPServer;
+class IPacket;
 
 struct RecvOverlappedData
 {
@@ -39,6 +40,12 @@ public:
 	void OnSessionReleased();
 	virtual void OnClientEntered() {}
 	virtual void OnClientLeaved() {}
+
+public:
+	void SendPacket(IPacket& packet);
+	void SendPacket(NetBuffer& packet);
+	void SendPacketAndDisconnect(IPacket& packet);
+	void SendPacketAndDisconnect(NetBuffer& packet);
 
 private:
 	SOCKET socket;

@@ -94,6 +94,9 @@ private:
 #pragma endregion session
 
 #pragma region io
+public:
+	void SendPacket(IOCPSession& session, OUT NetBuffer& packet);
+
 private:
 	IO_POST_ERROR RecvPost(OUT IOCPSession& session);
 	IO_POST_ERROR SendPost(OUT IOCPSession& session);

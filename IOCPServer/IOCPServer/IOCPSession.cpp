@@ -2,6 +2,7 @@
 #include "IOCPSession.h"
 #include <iostream>
 #include "PacketManager.h"
+#include "IOCPServer.h"
 
 IOCPSession::IOCPSession(SOCKET inSocket, SessionId inSessionId)
 	: socket(inSocket)
@@ -61,4 +62,44 @@ void IOCPSession::OnReceived(NetBuffer& recvPacket)
 void IOCPSession::OnSessionReleased()
 {
 
+}
+
+void IOCPSession::SendPacket(IPacket& packet)
+{
+	NetBuffer* buffer = NetBuffer::Alloc();
+	if (buffer == nullptr)
+	{
+		std::cout << "buffer is nullprt" << std::endl;
+		return;
+	}
+
+	*buffer << packet.GetPacketId();
+	buffer->WriteBuffer((char*)(&packet) + 8, packet.GetPacketSize());
+
+	SendPacket(*buffer);
+}
+
+void IOCPSession::SendPacket(NetBuffer& packet)
+{
+	IOCPServer::GetInst().SendPacket(*this, packet);
+}
+
+void IOCPSession::SendPacketAndDisconnect(IPacket& packet)
+{
+	isSendAndDisconnect = true;
+	NetBuffer* buffer = NetBuffer::Alloc();
+	if (buffer == nullptr)
+	{
+		std::cout << "buffer is nullptr" << std::endl;
+		return;
+	}
+
+	buffer->WriteBuffer((char*)&packet, packet.GetPacketSize());
+	SendPacket(*buffer);
+}
+
+void IOCPSession::SendPacketAndDisconnect(NetBuffer& packet)
+{
+	isSendAndDisconnect = true;
+	IOCPServer::GetInst().SendPacket(*this, packet);
 }

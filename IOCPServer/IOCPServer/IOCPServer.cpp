@@ -457,6 +457,20 @@ void IOCPServer::IOCountDecrement(OUT IOCPSession& session)
 	}
 }
 
+void IOCPServer::SendPacket(IOCPSession& session, OUT NetBuffer& packet)
+{
+	if (packet.m_bIsEncoded == false)
+	{
+		packet.m_iWriteLast = packet.m_iWrite;
+		packet.m_iWrite = 0;
+		packet.m_iRead = 0;
+		packet.Encode();
+	}
+
+	session.sendIOData.sendQ.Enqueue(&packet);
+	SendPost(session);
+}
+
 void IOCPServer::HandlePacketError(NetBuffer& willDeallocateBuffer, const std::string& printErrorString)
 {
 	PrintError(printErrorString);
@@ -479,6 +493,35 @@ void IOCPServer::Disconnect(SessionId sessionId)
 #pragma region io
 IO_POST_ERROR IOCPServer::RecvPost(OUT IOCPSession& session)
 {
+	int brokenSize = session.recvIOData.ringBuffer.GetNotBrokenPutSize();
+	int restSize = session.recvIOData.ringBuffer.GetFreeSize() - brokenSize;
+	int bufferCount = 1;
+	DWORD flag = 0;
+
+	WSABUF buffer[2];
+	buffer[0].buf = session.recvIOData.ringBuffer.GetWriteBufferPtr();
+	buffer[0].len = brokenSize;
+	if (restSize > 0)
+	{
+		buffer[1].buf = session.recvIOData.ringBuffer.GetBufferPtr();
+		buffer[1].len = restSize;
+		++bufferCount;
+	}
+
+	InterlockedIncrement(&session.ioCount);
+	int retval = WSARecv(session.socket, buffer, bufferCount, NULL, &flag, &session.recvIOData.overlapped, 0);
+	if (retval == SOCKET_ERROR)
+	{
+		int error = WSAGetLastError();
+		if (error != ERROR_IO_PENDING)
+		{
+			IOCountDecrement(session);
+			PrintError("WSARecv error", error);
+			
+			return IO_POST_ERROR::FAILED_RECV_POST;
+		}
+	}
+
 	return IO_POST_ERROR::SUCCESS;
 }
 
