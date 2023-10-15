@@ -1,4 +1,5 @@
 #pragma once
+#include "Enum.h"
 
 using PacketId = unsigned int;
 
@@ -16,4 +17,46 @@ public:
 	virtual int GetPacketSize() = 0;
 };
 
+class Ping : public IPacket
+{
+public:
+	Ping() = default;
+	~Ping() = default;
+	GET_PACKET_ID(PACKET_ID::PING);
+	GET_PACKET_SIZE();
+};
+
+class Pong : public IPacket
+{
+public:
+	Pong() = default;
+	~Pong() = default;
+	GET_PACKET_ID(PACKET_ID::PONG);
+	GET_PACKET_SIZE();
+};
+
 #pragma pack(pop)
+
+#define REGISTER_PACKET(PacketType){\
+	RegisterPacket<PacketType>();\
+}
+
+#pragma region PacketHandler
+
+#define REGISTER_HANDLER(PacketType)\
+	RegisterPacketHandler<PacketType>();
+
+#define DECLARE_HANDLE_PACKET(PacketType)\
+	static bool HandlePacket(IOCPSession& session, PacketType& packet);\
+
+#define REGISTER_ALL_HANDLER()\
+	REGISTER_HANDLER(Ping)\
+
+#define DECLARE_ALL_HANDLER()\
+	DECLARE_HANDLE_PACKET(Ping)\
+
+#pragma endregion PacketHandler
+
+#define REGISTER_PACKET_LIST(){\
+	REGISTER_PACKET(Ping)\
+}

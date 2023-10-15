@@ -138,6 +138,7 @@
     <ClCompile Include="IOCPServer.cpp" />
     <ClCompile Include="IOCPSession.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="PacketHandler.cpp" />
     <ClCompile Include="PacketManager.cpp" />
   </ItemGroup>
   <ItemGroup>

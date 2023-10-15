@@ -54,6 +54,9 @@
     <ClCompile Include="..\..\..\..\..\Desktop\Common\PreCompile.cpp">
       <Filter>소스 파일\Include</Filter>
     </ClCompile>
+    <ClCompile Include="PacketHandler.cpp">
+      <Filter>소스 파일\Packet</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="IOCPServer.h">

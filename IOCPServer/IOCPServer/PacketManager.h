@@ -61,6 +61,6 @@ public:
 
 #pragma region PakcetHandler
 public:
-	// Declare Packet Handler()
+	DECLARE_ALL_HANDLER();
 #pragma endregion PakcetHandler
 };
