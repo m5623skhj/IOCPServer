@@ -509,8 +509,8 @@ IO_POST_ERROR IOCPServer::RecvPost(OUT IOCPSession& session)
 	}
 
 	InterlockedIncrement(&session.ioCount);
-	int retval = WSARecv(session.socket, buffer, bufferCount, NULL, &flag, &session.recvIOData.overlapped, 0);
-	if (retval == SOCKET_ERROR)
+	if (WSARecv(session.socket, buffer, bufferCount, NULL, &flag, &session.recvIOData.overlapped, 0)
+		== SOCKET_ERROR)
 	{
 		int error = WSAGetLastError();
 		if (error != ERROR_IO_PENDING)
@@ -527,7 +527,47 @@ IO_POST_ERROR IOCPServer::RecvPost(OUT IOCPSession& session)
 
 IO_POST_ERROR IOCPServer::SendPost(OUT IOCPSession& session)
 {
-	return IO_POST_ERROR::SUCCESS;
+	while (1)
+	{
+		if (InterlockedCompareExchange(&session.sendIOData.ioMode, SENDING, NONSENDING))
+		{
+			return IO_POST_ERROR::SUCCESS;
+		}
+
+		int useSize = session.sendIOData.sendQ.GetRestSize();
+		if (useSize == 0)
+		{
+			InterlockedExchange(&session.sendIOData.ioMode, NONSENDING);
+			if (session.sendIOData.sendQ.GetRestSize() > 0)
+			{
+				continue;
+			}
+
+			return IO_POST_ERROR::SUCCESS;
+		}
+
+		WSABUF buffer[ONE_SEND_WSABUF_MAX];
+		if (ONE_SEND_WSABUF_MAX < useSize)
+		{
+			useSize = ONE_SEND_WSABUF_MAX;
+		}
+		session.sendIOData.bufferCount += useSize;
+
+		InterlockedIncrement(&session.ioCount);
+		if (WSASend(session.socket, buffer, useSize, NULL, 0, &session.sendIOData.overlapped, 0)
+			== SOCKET_ERROR)
+		{
+			int error = WSAGetLastError();
+			if (error != ERROR_IO_PENDING)
+			{
+				PrintError("SendPost", error);
+				IOCountDecrement(session);
+				return IO_POST_ERROR::IS_DELETED_SESSION;
+			}
+
+			return IO_POST_ERROR::FAILED_SEND_POST;
+		}
+	}
 }
 #pragma endregion io
 
