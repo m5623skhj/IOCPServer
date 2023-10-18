@@ -5,12 +5,12 @@
 
 using namespace std;
 
-void PrintError(const string& errorFunctionName)
+void PrintError(const string_view errorFunctionName)
 {
 	cout << errorFunctionName << "() failed " << GetLastError() << endl;
 }
 
-void PrintError(const string& errorFunctionName, DWORD errorCode)
+void PrintError(const string_view errorFunctionName, DWORD errorCode)
 {
 	cout << errorFunctionName << "() failed " << errorCode << endl;
 }
