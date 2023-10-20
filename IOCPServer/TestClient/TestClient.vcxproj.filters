@@ -56,5 +56,8 @@
     <ClInclude Include="TestClient.h">
       <Filter>소스 파일\Client</Filter>
     </ClInclude>
+    <ClInclude Include="..\IOCPServer\Protocol.h">
+      <Filter>소스 파일\Client</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -141,6 +141,7 @@
     <ClCompile Include="TestClient.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\IOCPServer\Protocol.h" />
     <ClInclude Include="TestClient.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
