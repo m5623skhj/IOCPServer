@@ -487,7 +487,6 @@ void IOCPServer::Disconnect(SessionId sessionId)
 	}
 
 	shutdown(session->second->socket, SD_BOTH);
-	IOCountDecrement(*session->second);
 }
 #pragma endregion session
 
