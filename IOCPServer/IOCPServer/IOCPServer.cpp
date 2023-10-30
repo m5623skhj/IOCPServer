@@ -440,11 +440,15 @@ std::shared_ptr<IOCPSession> IOCPServer::GetNewSession(SOCKET enteredClientSocke
 
 bool IOCPServer::ReleaseSession(OUT IOCPSession& releaseSession)
 {
+	releaseSession.OnSessionReleased();
+	
 	closesocket(releaseSession.socket);
 	InterlockedDecrement(&sessionCount);
 
 	lock_guard<mutex> lock(sessionMapLock);
 	sessionMap.erase(releaseSession.sessionId);
+
+	releaseSession.socket = INVALID_SOCKET;
 
 	return true;
 }

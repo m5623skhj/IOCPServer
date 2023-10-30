@@ -61,7 +61,22 @@ void IOCPSession::OnReceived(NetBuffer& recvPacket)
 
 void IOCPSession::OnSessionReleased()
 {
+	int sendBufferCount = sendIOData.bufferCount;
+	int restSize = sendIOData.sendQ.GetRestSize();
+	for (int i = 0; i < sendBufferCount; ++i)
+	{
+		NetBuffer::Free(storedBuffer[i]);
+	}
 
+	if (restSize > 0)
+	{
+		NetBuffer* deleteBufferPointer;
+		for (int i = 0; i < restSize; ++i)
+		{
+			sendIOData.sendQ.Dequeue(&deleteBufferPointer);
+			NetBuffer::Free(deleteBufferPointer);
+		}
+	}
 }
 
 void IOCPSession::SendPacket(IPacket& packet)
