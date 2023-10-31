@@ -14,4 +14,6 @@ enum class PACKET_ID : unsigned int
 	INVALID_PACKET = 0
 	, PING
 	, PONG
+	, REQUEST_FILE_STREAM
+	, RESPONSE_FILE_STREAM
 };

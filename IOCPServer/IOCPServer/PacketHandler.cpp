@@ -9,3 +9,10 @@ bool PacketManager::HandlePacket(IOCPSession& session, Ping& packet)
 
 	return true;
 }
+
+bool PacketManager::HandlePacket(IOCPSession& session, RequestFileStream& packet)
+{
+	UNREFERENCED_PARAMETER(packet);
+
+	return true;
+}
