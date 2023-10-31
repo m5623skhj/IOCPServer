@@ -47,6 +47,9 @@ class ResponseFileStream: public IPacket
 public:
 	GET_PACKET_ID(PACKET_ID::RESPONSE_FILE_STREAM);
 	GET_PACKET_SIZE();
+
+public:
+	char fileStream[4096];
 };
 
 #pragma pack(pop)
