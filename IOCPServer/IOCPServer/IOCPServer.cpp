@@ -320,6 +320,12 @@ IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
 
 IO_POST_ERROR IOCPServer::IOSendPostPart(IOCPSession& session)
 {
+	for (int i = 0; i < session.sendIOData.bufferCount; ++i)
+	{
+		NetBuffer::Free(session.storedBuffer[i]);
+	}
+	session.sendIOData.bufferCount = 0;
+
 	InterlockedExchange(&session.nowPostQueueing, NONSENDING);
 	IO_POST_ERROR retval = SendPost(session);
 
@@ -554,6 +560,14 @@ IO_POST_ERROR IOCPServer::SendPost(OUT IOCPSession& session)
 		if (ONE_SEND_WSABUF_MAX < useSize)
 		{
 			useSize = ONE_SEND_WSABUF_MAX;
+		}
+
+
+		for (int i = 0; i < useSize; ++i)
+		{
+			session.sendIOData.sendQueue.Dequeue(&session.sendIOData.sendBufferStore[i]);
+			buffer[i].buf = session.sendIOData.sendBufferStore[i]->GetBufferPtr();
+			buffer[i].len = session.sendIOData.sendBufferStore[i]->GetAllUseSize();
 		}
 		session.sendIOData.bufferCount += useSize;
 
