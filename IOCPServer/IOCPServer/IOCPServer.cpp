@@ -320,8 +320,8 @@ IO_POST_ERROR IOCPServer::IOSendPart(IOCPSession& session)
 
 IO_POST_ERROR IOCPServer::IOSendPostPart(IOCPSession& session)
 {
-	IO_POST_ERROR retval = SendPost(session);
 	InterlockedExchange(&session.nowPostQueueing, NONSENDING);
+	IO_POST_ERROR retval = SendPost(session);
 
 	return retval;
 }
